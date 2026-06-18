@@ -10,7 +10,7 @@ jobs:
     name: shell + dockerfile lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: shellcheck
         # Pinned image so CI matches what contributors run locally (no version drift).
@@ -30,7 +30,7 @@ jobs:
     name: container security assertions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: build container + assert hardening
         run: bash tunnel/verify-hardening.sh
