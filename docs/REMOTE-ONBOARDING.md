@@ -5,6 +5,17 @@ front of you, you just run [`tunnel/mac-setup.sh`](../tunnel/mac-setup.sh). When
 has to bootstrap it. The goal is the fewest, least-scary actions on their end that leave you able to
 connect.
 
+## Bring your own infrastructure
+
+`mac-lifeline` is self-hosted. Two pieces, very different requirements:
+
+- **The VPS is required and is yours.** It's the rendezvous the Mac dials into, and the whole security
+  model rests on it being *a VPS you control*. Any provider, any small box. Not Cloudflare-specific.
+- **A link host is optional.** You only need somewhere to serve a one-time script for Levels 2-3. You do
+  **not** need one for **Level 1** (the client runs the raw installer URL with env vars inline), and even
+  for 2-3 you can **self-host the link on the same VPS** you already run. Cloudflare (below) is just one
+  convenient option because it's what this repo's authors already use — swap in any equivalent.
+
 ## One installer, three handoff strategies
 
 `mac-setup.sh` is the same script in every case. What changes is **how your access gets authorized** —
@@ -92,7 +103,14 @@ generic web host.
 
 ## Where to host the one-time link / short script
 
-Use whatever you already run. For the Cloudflare-native setup this repo was extracted from:
+Use whatever you already run — **you don't need a separate provider.** Cheapest first:
+
+- **Nothing (Level 1).** Have the client run the raw installer URL with env vars inline — no host at all.
+- **Your VPS.** You already run it; serve the one-time script from a tiny static dir (caddy/nginx) or a
+  short path, and delete it after fetch. One box, no extra accounts.
+- **Any object store / static host** with a short URL in front.
+
+If you happen to run Cloudflare (as this repo's authors do), it's a clean fit:
 
 - **Static script (Level 1, and Level 2 if you accept a TTL):** put the personalized `.sh` in an **R2
   bucket** served over your CDN domain (`cdn.example.com/x/abc123.sh`). R2 **lifecycle rules** can expire
