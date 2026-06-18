@@ -273,8 +273,7 @@ Two friction points worth knowing before you deploy:
 - [x] `tunnel/uninstall.command` — cleanly unload the daemon and remove keys/plist
 - [x] `verify-hardening.sh` — codify the negative security tests as a runnable check
 - [x] CI: `shellcheck` + `hadolint` + a container hardening smoke test
-- [x] Remote onboarding: mode-aware `curl|bash` installer (Remote Login auto-enable, clipboard hand-off) + `authorize-key.sh` + [REMOTE-ONBOARDING.md](docs/REMOTE-ONBOARDING.md) (Level 1 done; 2/3 designed)
-- [ ] Hosted one-time-link service for Level 2/3 (Cloudflare Worker + R2/KV) and the enroll sidecar
+- [x] Remote onboarding, **Levels 1-3** — mode-aware `curl|bash` installer (Remote Login auto-enable, clipboard hand-off), `authorize-key.sh`, and a self-deployable [`onboard-worker/`](tunnel/onboard-worker/) (one-time links + Level-3 self-enroll via an outbound VPS poll agent). See [REMOTE-ONBOARDING.md](docs/REMOTE-ONBOARDING.md).
 - [ ] `tunnel/vps-setup.sh` to mirror `mac-setup.sh` (no hand-copied `docker run`)
 - [ ] Host-key pinning option for the Mac→VPS hop
 - [ ] Externalize the adware signature list for easy community PRs

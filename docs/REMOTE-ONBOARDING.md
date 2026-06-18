@@ -21,11 +21,14 @@ connect.
 `mac-setup.sh` is the same script in every case. What changes is **how your access gets authorized** —
 inferred from which environment variables the (hosted) installer sets:
 
-| Level | Client does | Env that triggers it | You build |
-|------:|-------------|----------------------|-----------|
-| **1 — send the code** | runs it, pastes one code back to you | *(none — default)* | nothing new |
-| **2 — pre-baked key** | runs it, sends nothing | `TUNNEL_PRIVKEY` | a one-time link host |
-| **3 — self-enroll** | runs it, sends nothing | `ENROLL_URL` + `ENROLL_TOKEN` | a one-time link host **+** an enroll endpoint |
+| Level | Client does | Env that triggers it | What it needs |
+|------:|-------------|----------------------|---------------|
+| **1 — send the code** | runs it, pastes one code back to you | *(none — default)* | nothing extra |
+| **2 — pre-baked key** | runs it, sends nothing | `TUNNEL_PRIVKEY` | a one-time link host *(optional; [`onboard-worker/`](../tunnel/onboard-worker/) ships one)* |
+| **3 — self-enroll** | runs it, sends nothing | `ENROLL_URL` + `ENROLL_TOKEN` | the [`onboard-worker/`](../tunnel/onboard-worker/) `/enroll` routes **+** its `enroll-agent.sh` on your VPS |
+
+> All of these are **self-hosted** — you run them on your own VPS (+ optionally your own Cloudflare). This
+> repo ships the worker and agent so you can stand up the same thing; nobody runs an onboarding service for you.
 
 In all three the installer also: turns on **Remote Login** for them (or opens the exact Settings pane on
 macOS 10.15+), warns that the password won't show as they type, and prints a friendly "done" message.
