@@ -1,6 +1,13 @@
-# mac-lifeline
+<p align="center">
+  <img src="docs/img/mac-lifeline.svg" alt="mac-lifeline" width="190">
+</p>
 
-> **Reach, clean, and maintain old Macs that no modern tool will touch** — using only built-in `ssh` + `launchd` and a small hardened container you control.
+<h1 align="center">mac-lifeline</h1>
+
+<p align="center">
+  <strong>Reach, clean, and maintain old Macs that no modern tool will touch</strong><br>
+  <em>using only built-in <code>ssh</code> + <code>launchd</code> and a small hardened container you control.</em>
+</p>
 
 [![CI](https://github.com/curtismercier/mac-lifeline/actions/workflows/ci.yml/badge.svg)](https://github.com/curtismercier/mac-lifeline/actions/workflows/ci.yml)
 [![macOS 10.13+](https://img.shields.io/badge/macOS-10.13%2B%20High%20Sierra-blue?logo=apple&logoColor=white)](#supported-macos)
@@ -39,6 +46,10 @@ it runs on hardware and OS versions everything else has dropped.
 ---
 
 ## Why mac-lifeline?
+
+<p align="center">
+  <img src="docs/img/revive.svg" alt="A dead iMac brought back to life by a heartbeat lifeline" width="500">
+</p>
 
 **Tailscale and cloudflared both require macOS 10.15+.** On a 10.13 or 10.14 machine they simply won't
 install — which is exactly the machine a non-technical owner is most likely still running, and least able

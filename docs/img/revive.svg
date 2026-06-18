@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200" role="img" aria-label="A dead iMac brought back to life: flatline becomes a heartbeat, frown becomes a smile">
+  <defs>
+    <linearGradient id="alu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2e7ec"/><stop offset="0.5" stop-color="#c2c9d0"/><stop offset="1" stop-color="#a4acb4"/>
+    </linearGradient>
+    <linearGradient id="aluDead" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cdd1d6"/><stop offset="0.5" stop-color="#b3b8be"/><stop offset="1" stop-color="#9a9fa6"/>
+    </linearGradient>
+    <radialGradient id="scOn" cx="0.5" cy="0.42" r="0.8"><stop offset="0" stop-color="#1b2734"/><stop offset="1" stop-color="#0b0f15"/></radialGradient>
+    <radialGradient id="scOff" cx="0.5" cy="0.42" r="0.8"><stop offset="0" stop-color="#1a1d22"/><stop offset="1" stop-color="#0e1013"/></radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+
+  <!-- ============ LEFT: the dead iMac ============ -->
+  <g transform="translate(28,34)">
+    <ellipse cx="65" cy="140" rx="44" ry="7" fill="#0b0f15" opacity="0.12" filter="url(#soft)"/>
+    <path d="M54 96 H76 L80 118 H50 Z" fill="#a7adb4"/>
+    <rect x="36" y="114" width="58" height="9" rx="4.5" fill="url(#aluDead)" stroke="#969ba2" stroke-width="0.8"/>
+    <rect x="0" y="0" width="130" height="100" rx="11" fill="url(#aluDead)" stroke="#969ba2" stroke-width="1.2"/>
+    <rect x="7" y="7" width="116" height="72" rx="5" fill="url(#scOff)"/>
+    <!-- X eyes -->
+    <g stroke="#7b828b" stroke-width="3.2" stroke-linecap="round">
+      <path d="M42 27 l9 9 M51 27 l-9 9"/>
+      <path d="M79 27 l9 9 M88 27 l-9 9"/>
+    </g>
+    <!-- frown -->
+    <path d="M48 56 Q65 47 82 56" fill="none" stroke="#7b828b" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- flatline (no pulse) -->
+    <path d="M14 67 H116" fill="none" stroke="#8b9098" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+
+  <!-- ============ MIDDLE: the lifeline ============ -->
+  <path d="M170 100 H206 l9 -26 l12 52 l11 -60 l12 60 l9 -16 H372"
+        fill="none" stroke="#fb7185" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M368 92 l16 8 l-16 8 Z" fill="#fb7185" filter="url(#glow)"/>
+
+  <!-- ============ RIGHT: the revived iMac ============ -->
+  <g transform="translate(402,34)">
+    <ellipse cx="65" cy="140" rx="44" ry="7" fill="#0b0f15" opacity="0.16" filter="url(#soft)"/>
+    <path d="M54 96 H76 L80 118 H50 Z" fill="#9aa1a9"/>
+    <rect x="36" y="114" width="58" height="9" rx="4.5" fill="url(#alu)" stroke="#8b939b" stroke-width="0.8"/>
+    <rect x="0" y="0" width="130" height="100" rx="11" fill="url(#alu)" stroke="#8b939b" stroke-width="1.2"/>
+    <rect x="7" y="7" width="116" height="72" rx="5" fill="url(#scOn)"/>
+    <!-- happy eyes -->
+    <g fill="#4ade80">
+      <circle cx="47" cy="31" r="5.5"/><circle cx="83" cy="31" r="5.5"/>
+      <circle cx="45.3" cy="29.3" r="1.7" fill="#bbf7d0"/><circle cx="81.3" cy="29.3" r="1.7" fill="#bbf7d0"/>
+    </g>
+    <!-- smile -->
+    <path d="M46 48 Q65 64 84 48" fill="none" stroke="#4ade80" stroke-width="5.5" stroke-linecap="round"/>
+    <!-- heartbeat -->
+    <path d="M14 67 H44 l4 -9 l5 18 l4 -23 l5 23 l4 -7 H116"
+          fill="none" stroke="#fb7185" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  </g>
+</svg>
