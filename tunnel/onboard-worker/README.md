@@ -30,6 +30,21 @@ bash new-client.sh --mode bake    # Level 2: pre-baked key, client sends nothing
 
 It prints the short URL and the exact message to text the client.
 
+## Level 3 (self-enroll) — optional, no key ever distributed
+
+The Worker also has `/enroll/*` routes and there's a VPS-side `enroll-agent.sh`. The client's Mac submits
+its own public key to the Worker (one-time token); your VPS **polls outward** and applies it — no inbound
+port on the box. Set a second secret and run the agent:
+
+```bash
+npx wrangler secret put AGENT_TOKEN            # for the VPS agent's poll/ack calls
+# on the VPS (per-15s timer / systemd / cron):
+ONBOARD_URL=https://get.example.com AGENT_TOKEN=… bash enroll-agent.sh --loop
+```
+
+Mint a per-client token with `POST /enroll/new {"container":"…"}` (admin), then the client's installer
+runs with `ENROLL_URL`/`ENROLL_TOKEN` set. Full flow in [REMOTE-ONBOARDING.md](../../docs/REMOTE-ONBOARDING.md#level-3--self-enroll-cleanest-no-key-ever-leaves-your-side).
+
 ## How it stays safe
 
 - `POST /new` is gated by the `ADMIN_TOKEN` bearer; only you can mint links.

@@ -86,20 +86,39 @@ The installer generates the Mac's own key and `POST`s the **public** key to an e
 run, authenticated by a one-time token. Nothing comes back to you, and no private key is ever
 distributed.
 
-Hosted one-time script:
+**This repo ships the pieces; you self-host them** (we don't run an enrollment service for anyone else).
+The design avoids opening any inbound port on your VPS — the box only ever dials *out*, exactly like the
+tunnel itself:
+
+```
+ client Mac ──POST pubkey+token──▶  your Worker (/enroll)  ──stores pending──▶  KV
+                                          ▲                                        │
+   your VPS  ──poll /enroll/pending (outbound, AGENT_TOKEN)──────────────────────┘
+   your VPS  ──applies key to the container (hardened) ──▶ POST /enroll/ack
+```
+
+1. **Worker** ([`onboard-worker/`](../tunnel/onboard-worker/)) gains four routes: `POST /enroll/new`
+   (admin mints a one-time token bound to a container), `POST /enroll` (the Mac submits its pubkey +
+   token → stored *pending*), and `GET /enroll/pending` + `POST /enroll/ack` (gated by `AGENT_TOKEN`).
+2. **Agent** ([`onboard-worker/enroll-agent.sh`](../tunnel/onboard-worker/enroll-agent.sh)) runs on your
+   VPS on a 15s timer, **polls outward**, and applies each pending key to the named container with the
+   exact hard restrictions (`restrict,port-forwarding,permitlisten="127.0.0.1:9922"`), then acks.
+
+Mint a token and hand the client the installer URL:
 
 ```bash
-export ENROLL_URL=https://enroll.example.com/v1/enroll ENROLL_TOKEN=once-abc123
+# tech: mint a one-time enroll token for this client's container
+curl -s -X POST https://get.example.com/enroll/new -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'content-type: application/json' -d '{"container":"acme-imac"}'   # -> {"token":"..."}
+
+# the client's one-time installer then runs:
+export ENROLL_URL=https://get.example.com/enroll ENROLL_TOKEN=<that token>
 export VPS_HOST=1.2.3.4 LABEL=com.you.acme-imac
 curl -fsSL https://raw.githubusercontent.com/curtismercier/mac-lifeline/master/tunnel/mac-setup.sh | bash
 ```
 
-The endpoint contract (what you build): `POST` with `Authorization: Bearer <token>` and form field
-`pubkey=<ssh-ed25519 …>`. On a valid, unused token it must add the key to the right container's
-`authorized_keys` **with the hard restrictions** (exactly what `authorize-key.sh` does:
-`restrict,port-forwarding,permitlisten="127.0.0.1:9922"`), then burn the token. Because it writes the
-container's `authorized_keys`, this endpoint lives **on/next to the VPS** (a tiny sidecar), not on a
-generic web host.
+Run the agent on the VPS: `ONBOARD_URL=https://get.example.com AGENT_TOKEN=... bash enroll-agent.sh --loop`
+(or as a systemd/cron timer).
 
 ## Where to host the one-time link / short script
 
@@ -119,9 +138,10 @@ If you happen to run Cloudflare (as this repo's authors do), it's a clean fit:
   It looks the id up in **KV or D1**, serves the script (from R2 or generated inline) exactly once, then
   marks it consumed / deletes the object. This gives you clean short URLs *and* single-use semantics
   without standing up a VM.
-- **The enroll endpoint (Level 3 only)** must reach the container's `authorized_keys`, so run it **on the
-  VPS** beside the tunnel container (a minimal HTTPS sidecar), or have a Worker call back to the VPS over
-  a private channel (e.g. Tailscale). Keep its surface tiny and token-gated.
+- **Level 3 needs no new inbound on the VPS.** The public `/enroll` lives on the Worker; your VPS runs
+  `enroll-agent.sh` which **polls outward** for pending keys and applies them. Nothing new listens on the
+  box — the safest posture if it runs other services. (Prefer real-time over polling? Front a localhost
+  enroll service with `cloudflared` instead — same no-inbound property, one extra daemon.)
 
 Rule of thumb: **links and scripts → your CDN/Worker; anything that writes the container → the VPS.**
 
