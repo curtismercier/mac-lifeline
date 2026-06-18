@@ -1,0 +1,28 @@
+# moe-tunnel sshd — reverse-tunnel-only. The iMac's key may ONLY bind 127.0.0.1:9922.
+Port 22
+AddressFamily inet
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+KbdInteractiveAuthentication no
+AllowUsers tunnel
+PrintMotd no
+X11Forwarding no
+AllowAgentForwarding no
+GatewayPorts no
+ClientAliveInterval 30
+ClientAliveCountMax 3
+LoginGraceTime 20
+MaxAuthTries 3
+MaxSessions 4
+
+# The tunnel user: reverse (-R) forwarding to ONE address:port, nothing else.
+Match User tunnel
+    AllowTcpForwarding remote
+    PermitOpen none
+    PermitListen 127.0.0.1:9922
+    PermitTTY no
+    X11Forwarding no
+    AllowAgentForwarding no
+    ForceCommand /sbin/nologin
