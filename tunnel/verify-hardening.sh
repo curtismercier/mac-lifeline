@@ -15,7 +15,7 @@ TMP="$(mktemp -d)"
 KEY="$TMP/id_test"
 FAIL=0
 
-# shellcheck disable=SC2329  # invoked indirectly via trap
+# shellcheck disable=SC2329,SC2317  # invoked indirectly via trap (code differs by shellcheck version)
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1; rm -rf "$TMP"; }
 trap cleanup EXIT INT TERM
 
