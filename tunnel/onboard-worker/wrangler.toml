@@ -1,0 +1,19 @@
+name = "mac-lifeline-onboard"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# 1. Create a KV namespace and paste its id below:
+#      source your-cloudflare.env   # CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
+#      npx wrangler kv namespace create LINKS
+[[kv_namespaces]]
+binding = "LINKS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# 2. Set the admin token (gate for POST /new):
+#      npx wrangler secret put ADMIN_TOKEN
+#
+# 3. Deploy:  npx wrangler deploy
+#    Worker is then live at https://mac-lifeline-onboard.<your-subdomain>.workers.dev
+#
+# 4. (optional) serve on your own short domain instead — uncomment and set yours:
+# routes = [{ pattern = "get.example.com", custom_domain = true }]
