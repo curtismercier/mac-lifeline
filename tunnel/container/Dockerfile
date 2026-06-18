@@ -1,5 +1,5 @@
-# moe-tunnel — minimal hardened SSH rendezvous for reverse tunnel from Moe's iMac.
-# Purpose: accept ONE thing — a reverse port-forward from the iMac's tunnel key.
+# mac-tunnel — minimal hardened SSH rendezvous for a reverse tunnel from the target Mac.
+# Purpose: accept ONE thing — a reverse port-forward from the Mac's tunnel key.
 # No shell, no local forwarding, no host access. Disposable.
 FROM alpine:3.20
 

@@ -1,4 +1,4 @@
-# moe-tunnel sshd — reverse-tunnel-only. The iMac's key may ONLY bind 127.0.0.1:9922.
+# mac-tunnel sshd — reverse-tunnel-only. The Mac's key may ONLY bind 127.0.0.1:9922.
 Port 22
 AddressFamily inet
 PermitRootLogin no

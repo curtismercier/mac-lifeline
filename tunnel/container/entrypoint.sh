@@ -1,5 +1,5 @@
 #!/bin/sh
-# Writes the iMac's tunnel pubkey into authorized_keys with hard restrictions, then runs sshd.
+# Writes the Mac's tunnel pubkey into authorized_keys with hard restrictions, then runs sshd.
 set -e
 AK="/home/tunnel/.ssh/authorized_keys"
 if [ -n "${TUNNEL_PUBKEY:-}" ]; then
