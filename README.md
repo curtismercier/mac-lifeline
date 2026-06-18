@@ -173,6 +173,13 @@ ssh -J you@VPS -p 9922 <admin>@127.0.0.1
 ssh -o ProxyCommand="ssh you@VPS docker exec -i mactunnel nc 127.0.0.1 9922" <admin>@127.0.0.1
 ```
 
+### Not in the same room as the Mac?
+
+The installer is the same; the client runs one command and you get in. `mac-setup.sh` is mode-aware —
+it can have the client paste a code back to you, use a key you pre-authorized, or self-enroll — and it
+turns on Remote Login for them. See **[docs/REMOTE-ONBOARDING.md](docs/REMOTE-ONBOARDING.md)** for the
+three levels, the message to text your client, and where to host the one-time link.
+
 ## The maintenance tools
 
 Double-click `.command` files in [`tools/`](tools/) — they open in Terminal, ask for the Mac password
@@ -266,6 +273,8 @@ Two friction points worth knowing before you deploy:
 - [x] `tunnel/uninstall.command` — cleanly unload the daemon and remove keys/plist
 - [x] `verify-hardening.sh` — codify the negative security tests as a runnable check
 - [x] CI: `shellcheck` + `hadolint` + a container hardening smoke test
+- [x] Remote onboarding: mode-aware `curl|bash` installer (Remote Login auto-enable, clipboard hand-off) + `authorize-key.sh` + [REMOTE-ONBOARDING.md](docs/REMOTE-ONBOARDING.md) (Level 1 done; 2/3 designed)
+- [ ] Hosted one-time-link service for Level 2/3 (Cloudflare Worker + R2/KV) and the enroll sidecar
 - [ ] `tunnel/vps-setup.sh` to mirror `mac-setup.sh` (no hand-copied `docker run`)
 - [ ] Host-key pinning option for the Mac→VPS hop
 - [ ] Externalize the adware signature list for easy community PRs

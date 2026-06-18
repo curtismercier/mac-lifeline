@@ -17,6 +17,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:stable \
             tunnel/mac-setup.sh \
+            tunnel/authorize-key.sh \
             tunnel/uninstall.command \
             tunnel/verify-hardening.sh \
             tools/clean-adware.command \
