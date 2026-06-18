@@ -70,3 +70,22 @@ echo
 sudo cat "$KEY.pub"
 echo
 echo "Connect:  ssh -J you@${VPS_HOST} -p ${REVERSE_PORT} <admin>@127.0.0.1"
+
+echo
+echo "------------------------------------------------------------"
+echo "ONE LAST THING - the Mac must accept the incoming SSH for this to work:"
+if (exec 3<>/dev/tcp/127.0.0.1/22) 2>/dev/null; then
+  echo "  [ OK ] Remote Login (SSH) is ON - good, you'll be able to connect."
+else
+  echo "  [ !! ] Remote Login (SSH) looks OFF - the tunnel will connect, but you"
+  echo "         can't log in until you turn it on:"
+  echo "           System Settings > General > Sharing > Remote Login  (allow your admin user)"
+  echo "           ...or:  sudo systemsetup -setremotelogin on"
+fi
+echo
+echo "  For an always-available line, also set on this Mac:"
+echo "   - keep it awake       Energy Saver: computer sleep = Never (display may still sleep)"
+echo "   - power-cut recovery  Energy Saver: 'Start up automatically after a power failure'"
+echo "   - macOS 10.15+        grant Full Disk Access to sshd for full remote admin"
+echo "   - FileVault on?       unattended reboots won't reconnect until someone unlocks at the Mac"
+echo "------------------------------------------------------------"

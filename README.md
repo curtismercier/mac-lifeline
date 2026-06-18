@@ -96,6 +96,26 @@ container. Auto-reconnects, survives reboots, comes back on its own after a netw
 **You need:** a VPS with a public IP and Docker, and physical-or-remote access to the Mac once to run a
 setup script.
 
+### Before you start — enable this on the Mac
+
+The installer sets up the Mac dialing *out*. To **reach** it, you connect back into the Mac's own SSH
+server — which is **off by default**. Turn it on, or the tunnel will come up green but you still won't be
+able to log in:
+
+- **Remote Login — required.** System Settings → General → Sharing → **Remote Login = On**, and allow your
+  admin user. (macOS 10.13: System Preferences → Sharing → Remote Login. CLI: `sudo systemsetup -setremotelogin on`.)
+- **Stop it sleeping** *(for an always-on line)*. Energy Saver → computer sleep = **Never** (the display
+  may still sleep). A sleeping Mac drops the tunnel and is unreachable until something wakes it.
+- **Restart after a power cut.** Energy Saver → **Start up automatically after a power failure**.
+- **macOS 10.15+: Full Disk Access for `sshd`.** Privacy & Security → Full Disk Access → add `sshd` (or
+  `sshd-keygen-wrapper`), or TCC blocks remote access to Desktop/Documents and some admin tasks. (Not a
+  thing on 10.13–10.14.)
+- **FileVault caveat.** With FileVault on, a cold boot stays disk-locked until someone unlocks at the
+  console, so the daemon and `sshd` never start — unattended reboots won't reconnect on their own. Leave
+  it off for hands-free recovery, or accept one physical unlock after a full power-down.
+
+`mac-setup.sh` checks whether Remote Login is listening at the end and warns you if it isn't.
+
 ### 1 · On the VPS — run the rendezvous container
 
 ```bash
