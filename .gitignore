@@ -5,3 +5,7 @@ secrets*
 *.pub
 *.key
 id_*
+
+# live deploy config (account-specific) + wrangler state
+wrangler.live.toml
+.wrangler/
