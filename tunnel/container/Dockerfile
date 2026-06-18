@@ -3,6 +3,7 @@
 # No shell, no local forwarding, no host access. Disposable.
 FROM alpine:3.20
 
+# hadolint ignore=DL3018  # alpine floating versions: pinning openssh breaks on base-image bumps
 RUN apk add --no-cache openssh \
     && adduser -D -s /sbin/nologin tunnel \
     && sed -i 's/^tunnel:!:/tunnel:*:/' /etc/shadow \

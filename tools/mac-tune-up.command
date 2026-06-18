@@ -22,7 +22,7 @@ echo
 echo ">> CLEANUP — frees space + can speed things up. Nothing personal is touched."
 echo "   This will: empty your Trash, and clear app caches + old logs (apps rebuild caches automatically)."
 printf "   Do the cleanup now? [y/N] "
-read ans
+read -r ans
 if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
   before=$(df / | awk 'NR==2{print $4}')
   echo "   emptying Trash..."; rm -rf "$HOME/.Trash/"* "$HOME/.Trash/".* 2>/dev/null
@@ -35,8 +35,8 @@ else
   echo "   skipped cleanup (health report only)."
 fi
 echo
-echo "Tip: this Mac uses an older spinning hard drive — the single biggest speed-up"
-echo "would be a solid-state drive (SSD) or a newer Mac. See your options doc for that."
+echo "Tip: if this Mac still has a spinning hard drive, switching to an SSD is usually the"
+echo "single biggest speed-up you can get — bigger than any software cleanup."
 echo
 echo "All done. Press Return to close this window."
-read _
+read -r _

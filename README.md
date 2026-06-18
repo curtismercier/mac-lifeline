@@ -2,6 +2,7 @@
 
 > **Reach, clean, and maintain old Macs that no modern tool will touch** — using only built-in `ssh` + `launchd` and a small hardened container you control.
 
+[![CI](https://github.com/curtismercier/mac-lifeline/actions/workflows/ci.yml/badge.svg)](https://github.com/curtismercier/mac-lifeline/actions/workflows/ci.yml)
 [![macOS 10.13+](https://img.shields.io/badge/macOS-10.13%2B%20High%20Sierra-blue?logo=apple&logoColor=white)](#supported-macos)
 [![built with bash + launchd](https://img.shields.io/badge/built%20with-bash%20%2B%20launchd-555)](#how-the-tunnel-works)
 [![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)](#why-mac-lifeline)
@@ -119,6 +120,13 @@ bash tunnel/mac-setup.sh        # asks for the Mac password once
 It generates a key, installs a `launchd` daemon that auto-reconnects and survives reboots, and prints the
 Mac's **public key**. Paste that into the container's `TUNNEL_PUBKEY` (step 1) and (re)start it.
 
+### Removing it later
+
+Double-click [`tunnel/uninstall.command`](tunnel/uninstall.command) (or
+`bash tunnel/uninstall.command --label <your.label>`) on the Mac to stop and fully remove the daemon,
+its key directory, and its log. It confirms before doing anything and never touches your
+`authorized_keys`.
+
 ### 3 · Connect from anywhere
 
 ```bash
@@ -136,12 +144,15 @@ through the native dialog *once*, and print **every action they take**. Re-runna
 
 Removes known Mac adware and junk software across **all** user accounts and the system folders.
 
+- **Scan-first, then confirm.** It lists *exactly* what it found and removes nothing until you type
+  `yes`. Run `clean-adware.command --dry-run` to see what would be removed and exit without touching
+  anything.
 - **What it removes:** items whose names match a curated list of known adware families — MacKeeper,
   Adload / "Search Manager", Genieo, Bundlore, Pirrit, InstallMac, SearchMine, Advanced Mac Cleaner,
   and more. The match list lives at the top of the script (`PAT=`); adding a family is a one-line PR.
 - **What it will *never* touch:** anything not matching a known-adware name. It does not heuristically
-  guess, quarantine your documents, or remove legitimate apps. It prints each path before removing it.
-- **Safe to re-run** and safe to read first — it's ~80 lines of plain `bash`.
+  guess, quarantine your documents, or remove legitimate apps. It prints each path as it goes.
+- **Safe to re-run** and safe to read first — it's plain `bash`.
 
 ### `mac-tune-up.command`
 
@@ -162,8 +173,15 @@ stolen and still grants an attacker nothing useful:
 - **On-demand:** `docker stop` between sessions = zero attack surface.
 - **Two keys, two scopes:** Mac→container (tunnel) and you→Mac (control) never overlap.
 
-Verified with negative tests: interactive shell blocked · `-L` local-forward "administratively
-prohibited" · `-R` to any port other than 9922 denied.
+These claims are not just asserted — they're **tested**. [`tunnel/verify-hardening.sh`](tunnel/verify-hardening.sh)
+builds the container, runs it with a throwaway key, and proves each property: interactive shell blocked ·
+`-R` to the permitted port allowed · `-R` to any other port denied · effective sshd policy for the tunnel
+user inspected directly. It exits non-zero if any check fails, and runs on every push via
+[CI](.github/workflows/ci.yml).
+
+```bash
+bash tunnel/verify-hardening.sh   # requires docker + ssh
+```
 
 > **Known trade-off — first-connect trust.** The Mac's `launchd` daemon currently dials the VPS with
 > `StrictHostKeyChecking=no` + `UserKnownHostsFile=/dev/null` so it connects unattended on a fresh box.
@@ -206,11 +224,11 @@ Two friction points worth knowing before you deploy:
 
 ## Roadmap
 
-- [ ] `--dry-run` / preview mode for `clean-adware` (show, confirm, then remove)
-- [ ] `tunnel/uninstall.command` — cleanly unload the daemon and remove keys/plist
+- [x] `--dry-run` + scan-then-confirm for `clean-adware` (show, confirm, then remove)
+- [x] `tunnel/uninstall.command` — cleanly unload the daemon and remove keys/plist
+- [x] `verify-hardening.sh` — codify the negative security tests as a runnable check
+- [x] CI: `shellcheck` + `hadolint` + a container hardening smoke test
 - [ ] `tunnel/vps-setup.sh` to mirror `mac-setup.sh` (no hand-copied `docker run`)
-- [ ] `verify-hardening.sh` — codify the negative security tests as a runnable check
-- [ ] CI: `shellcheck` + `hadolint` + a container build smoke test
 - [ ] Host-key pinning option for the Mac→VPS hop
 - [ ] Externalize the adware signature list for easy community PRs
 - [ ] Client-deliverable templates (plain-English summary / options pages)

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  lint:
+    name: shell + dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: |
+          command -v shellcheck >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
+          shellcheck \
+            tunnel/mac-setup.sh \
+            tunnel/uninstall.command \
+            tunnel/verify-hardening.sh \
+            tools/clean-adware.command \
+            tools/mac-tune-up.command \
+            tunnel/container/entrypoint.sh
+
+      - name: hadolint
+        run: docker run --rm -i hadolint/hadolint < tunnel/container/Dockerfile
+
+  verify-hardening:
+    name: container security assertions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build container + assert hardening
+        run: bash tunnel/verify-hardening.sh
