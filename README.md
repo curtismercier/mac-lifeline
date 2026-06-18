@@ -110,12 +110,19 @@ docker run -d --name mactunnel --restart no -p 47222:22 \
 
 ### 2 · On the Mac — install the reverse tunnel
 
-Edit the `CONFIG` block in [`tunnel/mac-setup.sh`](tunnel/mac-setup.sh) (your VPS host/port, a unique
-launchd `LABEL`), then:
+Nothing to clone, nothing to edit — pipe the installer straight onto the Mac, passing your VPS host and a
+unique launchd label as env vars:
 
 ```bash
-bash tunnel/mac-setup.sh        # asks for the Mac password once
+curl -fsSL https://raw.githubusercontent.com/curtismercier/mac-lifeline/master/tunnel/mac-setup.sh \
+  | VPS_HOST=1.2.3.4 LABEL=com.you.mactunnel bash      # asks for the Mac password once
 ```
+
+All config is env-overridable: `VPS_HOST`, `VPS_PORT` (default `47222`), `REVERSE_PORT` (default `9922`),
+`LABEL`, and optionally `CONTROL_PUBKEY` (your control key, installed on the Mac's admin account).
+
+> Prefer to read before you run? Download and inspect it first, or clone the repo and edit the defaults
+> at the top of [`tunnel/mac-setup.sh`](tunnel/mac-setup.sh), then `bash tunnel/mac-setup.sh`.
 
 It generates a key, installs a `launchd` daemon that auto-reconnects and survives reboots, and prints the
 Mac's **public key**. Paste that into the container's `TUNNEL_PUBKEY` (step 1) and (re)start it.

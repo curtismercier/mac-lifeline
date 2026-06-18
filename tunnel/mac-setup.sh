@@ -1,16 +1,29 @@
 #!/bin/bash
 # mac-lifeline — reverse-SSH tunnel installer for the OLD MAC. Built-in ssh + launchd only (works on 10.13+).
-# 1) edit the CONFIG block below.  2) run:  bash mac-setup.sh   (asks for your Mac password once).
+# Asks for your Mac password once. Configure via env vars (works with curl | bash) OR by editing the
+# defaults below (works with a local clone). Env vars win.
+#
+#   Pipe it straight onto the Mac — nothing to clone, nothing to edit:
+#     curl -fsSL https://raw.githubusercontent.com/curtismercier/mac-lifeline/master/tunnel/mac-setup.sh \
+#       | VPS_HOST=1.2.3.4 LABEL=com.you.mactunnel bash
+#
+#   …or clone the repo, edit the defaults below, and run:  bash mac-setup.sh
 set -u
 
-# ===================== CONFIG — edit these =====================
-VPS_HOST="YOUR_VPS_IP_OR_HOST"     # where the container listens (must be public-reachable from the Mac)
-VPS_PORT="47222"                   # public port on the VPS  ->  container :22
-TUN_USER="tunnel"                  # the locked-down user inside the container
-REVERSE_PORT="9922"                # container-internal port -> this Mac's :22 (must match sshd permitlisten)
-CONTROL_PUBKEY=""                  # OPTIONAL: your control pubkey to install on this Mac's admin account
-LABEL="com.example.mactunnel"      # launchd label — rename per deployment (reverse-DNS style)
-# ===============================================================
+# ===================== CONFIG (env vars override these defaults) =====================
+VPS_HOST="${VPS_HOST:-YOUR_VPS_IP_OR_HOST}"   # where the container listens (public-reachable from the Mac)
+VPS_PORT="${VPS_PORT:-47222}"                 # public port on the VPS  ->  container :22
+TUN_USER="${TUN_USER:-tunnel}"                # the locked-down user inside the container
+REVERSE_PORT="${REVERSE_PORT:-9922}"          # container-internal port -> this Mac's :22 (match sshd permitlisten)
+CONTROL_PUBKEY="${CONTROL_PUBKEY:-}"          # OPTIONAL: your control pubkey to install on this Mac's admin account
+LABEL="${LABEL:-com.example.mactunnel}"       # launchd label — unique per deployment (reverse-DNS style)
+# =====================================================================================
+
+if [ -z "$VPS_HOST" ] || [ "$VPS_HOST" = "YOUR_VPS_IP_OR_HOST" ]; then
+  echo "ERROR: set VPS_HOST to your VPS IP/hostname before running. For example:" >&2
+  echo "  curl -fsSL <raw-url>/tunnel/mac-setup.sh | VPS_HOST=1.2.3.4 LABEL=com.you.mactunnel bash" >&2
+  exit 1
+fi
 
 ETC="/usr/local/etc/${LABEL}"; KEY="$ETC/id_tunnel"; PLIST="/Library/LaunchDaemons/${LABEL}.plist"
 
