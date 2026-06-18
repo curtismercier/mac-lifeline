@@ -1,63 +1,243 @@
 # mac-lifeline
 
-**Remote-support + cleanup tools for old, hard-to-reach Macs.**
+> **Reach, clean, and maintain old Macs that no modern tool will touch** — using only built-in `ssh` + `launchd` and a small hardened container you control.
 
-For the machines other tools gave up on: macOS back to **High Sierra (10.13)**, behind
-**CGNAT / Wi-Fi isolation** (Starlink, hotel, guest networks), too old for Tailscale or modern
-agents. `mac-lifeline` uses only **built-in `ssh` + `launchd`** plus a small hardened container on
-a VPS you control — the substrate that runs on *everything*.
+[![macOS 10.13+](https://img.shields.io/badge/macOS-10.13%2B%20High%20Sierra-blue?logo=apple&logoColor=white)](#supported-macos)
+[![built with bash + launchd](https://img.shields.io/badge/built%20with-bash%20%2B%20launchd-555)](#how-the-tunnel-works)
+[![dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)](#why-mac-lifeline)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-> Extracted from a real field engagement: a 2010 iMac on High Sierra, behind a Starlink router.
+`mac-lifeline` is for the machines other tools gave up on: macOS as far back as **High Sierra (10.13)**,
+sitting behind **CGNAT or Wi-Fi client-isolation** (Starlink, hotel, café, guest networks), too old for
+Tailscale, cloudflared, or any modern agent. Like Tailscale or ngrok, it lets you reach a machine with no
+inbound connectivity — but it needs **nothing installed** on the Mac beyond what Apple already ships, so
+it runs on hardware and OS versions everything else has dropped.
 
-## What's here
-- **`tunnel/`** — an on-demand reverse-SSH tunnel. The old Mac dials *out* to a throwaway container
-  on your VPS and reverse-forwards its own SSH, so you can reach it from anywhere.
-- **`tools/`** — double-click `.command` maintenance tools for the Mac itself:
-  - `clean-adware.command` — removes known Mac adware (MacKeeper, Adload/"Search Manager", Genieo, …) across all accounts. Safe; prints everything it does.
-  - `mac-tune-up.command` — health report (disk / SMART / RAM) + optional cleanup.
+> Extracted from a real field engagement: a 2010 iMac on High Sierra, behind a Starlink router, that
+> "couldn't browse." Remote diagnosis → adware removal → a standing remote-support line → done.
 
-## Why not Tailscale / cloudflared?
-Both need **macOS 10.15+**; on 10.13–10.14 they won't install. Built-in `ssh` + `launchd` do.
+---
+
+## Contents
+
+- [Why mac-lifeline?](#why-mac-lifeline)
+- [Supported macOS](#supported-macos)
+- [Features](#features)
+- [How the tunnel works](#how-the-tunnel-works)
+- [Quick start](#quick-start)
+- [The maintenance tools](#the-maintenance-tools)
+- [Security model](#security-model)
+- [Heads-up: Gatekeeper &amp; antivirus](#heads-up-gatekeeper--antivirus)
+- [Gotchas (paid for, so you don't)](#gotchas-paid-for-so-you-dont)
+- [When to use what](#when-to-use-what)
+- [Roadmap](#roadmap)
+- [Related projects](#related-projects)
+- [Contributing](#contributing) · [Security](#security) · [License](#license)
+
+---
+
+## Why mac-lifeline?
+
+**Tailscale and cloudflared both require macOS 10.15+.** On a 10.13 or 10.14 machine they simply won't
+install — which is exactly the machine a non-technical owner is most likely still running, and least able
+to fix themselves. Commercial remote-desktop apps (TeamViewer, AnyDesk) need a GUI install, an account,
+and someone at the keyboard to approve a session.
+
+`mac-lifeline` leans on the substrate that ships on **every** Mac back to the Intel era: OpenSSH and
+`launchd`. The Mac dials *out* to a throwaway container on a VPS you own and reverse-forwards its own SSH
+port. You hop through the container to reach it — from anywhere, through any CGNAT or AP isolation, with
+nothing to install and nothing listening for inbound connections.
+
+## Supported macOS
+
+| macOS | Version | Tunnel | Cleanup tools | Notes |
+|-------|---------|:------:|:-------------:|-------|
+| High Sierra | 10.13 | ✅ | ✅ | The original target. `ssh` + `launchd` present out of the box. |
+| Mojave | 10.14 | ✅ | ✅ | |
+| Catalina | 10.15 | ✅ | ✅ | Tailscale also works here if you'd rather use it. |
+| Big Sur → Sequoia | 11–15 | ✅ | ✅ | Works fine, though modern agents are an option on these. |
+| Older (10.6–10.12) | — | likely | partial | `ssh` + `launchd` long predate these; **untested** — reports welcome. |
+
+> Verified on 10.13. Anything marked "likely" is unverified — open an issue if you confirm one.
+
+## Features
+
+- **Runs on Macs nothing else will touch** — built-in `ssh` + `launchd` only, back to 10.13. No agent,
+  no Homebrew, no modern toolchain required on the target.
+- **CGNAT- and isolation-proof** — the Mac dials *out*; nothing needs to reach *in*. Works behind
+  Starlink, hotel/guest Wi-Fi, and double-NAT.
+- **Zero idle attack surface** — on-demand by design. `docker stop` the container between sessions and
+  there is nothing to attack. Bring it up only when you need in.
+- **Hardened by default** — a leaked Mac key is *inert* against your VPS: tunnel-only user, no shell, no
+  local forwarding, one permitted listen address. Verified with negative tests.
+- **Two keys, two scopes** — Mac→container (tunnel) and you→Mac (control) never overlap.
+- **Owner-friendly tools** — double-click `.command` maintenance scripts with native macOS password
+  prompts, so a non-technical owner never has to open Terminal or type a `sudo` line.
 
 ## How the tunnel works
-```
- OLD MAC (CGNAT, no inbound)               VPS you control              YOU
- launchd: ssh -N -R 127.0.0.1:9922:…:22  ─dials out─▶  container   ◀─ docker exec+nc ── ssh (your key)
-        (its own sshd)                      (hardened, tunnel-only)
-```
-The Mac dials out (through any CGNAT/isolation) into a container that does nothing but accept that
-one reverse forward. You hop through the container to reach the Mac.
 
-## Security model — a leaked Mac key is inert against your VPS
-- Tunnel user: `nologin`, key-only. `authorized_keys`: `restrict,port-forwarding,permitlisten="127.0.0.1:9922"`.
-- sshd `Match User tunnel`: `AllowTcpForwarding remote` (no `-L`), `PermitOpen none`, `PermitListen 127.0.0.1:9922`, `ForceCommand /sbin/nologin`.
-- Container: no privileged, no host-network, no mounts → can't see the VPS host or other services.
-- **On-demand:** `docker stop` between sessions = zero attack surface.
-- Two keys, two scopes: Mac→container (tunnel) and you→Mac (control) never overlap.
-- Verified with negative tests: shell blocked · `-L` "administratively prohibited" · `-R` to other ports denied.
+```
+ OLD MAC (CGNAT, no inbound)              VPS you control                 YOU
+ ┌───────────────────────┐         ┌────────────────────────┐      ┌──────────────┐
+ │ launchd daemon:        │  dials  │  hardened container     │ hop  │ ssh (control │
+ │ ssh -N -R 9922:lo:22 ──┼────────▶│  tunnel-only, port 9922 │◀─────┼─ key) via -J │
+ │ (its own sshd on :22)  │   out   │  no shell, no -L        │      │  or Proxy    │
+ └───────────────────────┘         └────────────────────────┘      └──────────────┘
+```
+
+The Mac's `launchd` daemon holds a reverse SSH connection open to a container that does exactly one
+thing: accept that one reverse forward and nothing else. You reach the Mac by hopping through the
+container. Auto-reconnects, survives reboots, comes back on its own after a network drop.
 
 ## Quick start
-1. **VPS** — build + run the container (`tunnel/container/`), publishing a public port → container `:22`:
-   ```bash
-   docker build -t mac-lifeline ./tunnel/container
-   docker run -d --name mactunnel --restart no -p 47222:22 \
-     -e TUNNEL_PUBKEY="<the old Mac's tunnel pubkey from step 2>" \
-     --security-opt no-new-privileges:true --cap-drop ALL \
-     --cap-add CHOWN --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
-     --cap-add FOWNER --cap-add SYS_CHROOT --cap-add KILL --tmpfs /run  mac-lifeline
-   ```
-2. **Old Mac** — edit the CONFIG block in `tunnel/mac-setup.sh`, then `bash tunnel/mac-setup.sh`.
-   It generates a key, installs a launchd daemon (auto-reconnects, survives reboots), and prints
-   its **public key** → paste that into the container's `TUNNEL_PUBKEY` (step 1) and (re)start it.
-3. **Connect:** `ssh -J you@VPS -p 9922 <admin>@127.0.0.1` — or a ProxyCommand:
-   `ssh -o ProxyCommand="ssh you@VPS docker exec -i mactunnel nc 127.0.0.1 9922" <admin>@127.0.0.1`
+
+**You need:** a VPS with a public IP and Docker, and physical-or-remote access to the Mac once to run a
+setup script.
+
+### 1 · On the VPS — run the rendezvous container
+
+```bash
+docker build -t mac-lifeline ./tunnel/container
+
+docker run -d --name mactunnel --restart no -p 47222:22 \
+  -e TUNNEL_PUBKEY="<the Mac's tunnel pubkey from step 2>" \
+  --security-opt no-new-privileges:true --cap-drop ALL \
+  --cap-add CHOWN --cap-add SETUID --cap-add SETGID --cap-add DAC_OVERRIDE \
+  --cap-add FOWNER --cap-add SYS_CHROOT --cap-add KILL --tmpfs /run  mac-lifeline
+```
+
+### 2 · On the Mac — install the reverse tunnel
+
+Edit the `CONFIG` block in [`tunnel/mac-setup.sh`](tunnel/mac-setup.sh) (your VPS host/port, a unique
+launchd `LABEL`), then:
+
+```bash
+bash tunnel/mac-setup.sh        # asks for the Mac password once
+```
+
+It generates a key, installs a `launchd` daemon that auto-reconnects and survives reboots, and prints the
+Mac's **public key**. Paste that into the container's `TUNNEL_PUBKEY` (step 1) and (re)start it.
+
+### 3 · Connect from anywhere
+
+```bash
+ssh -J you@VPS -p 9922 <admin>@127.0.0.1
+# …or as a one-liner ProxyCommand:
+ssh -o ProxyCommand="ssh you@VPS docker exec -i mactunnel nc 127.0.0.1 9922" <admin>@127.0.0.1
+```
+
+## The maintenance tools
+
+Double-click `.command` files in [`tools/`](tools/) — they open in Terminal, ask for the Mac password
+through the native dialog *once*, and print **every action they take**. Re-runnable any time.
+
+### `clean-adware.command`
+
+Removes known Mac adware and junk software across **all** user accounts and the system folders.
+
+- **What it removes:** items whose names match a curated list of known adware families — MacKeeper,
+  Adload / "Search Manager", Genieo, Bundlore, Pirrit, InstallMac, SearchMine, Advanced Mac Cleaner,
+  and more. The match list lives at the top of the script (`PAT=`); adding a family is a one-line PR.
+- **What it will *never* touch:** anything not matching a known-adware name. It does not heuristically
+  guess, quarantine your documents, or remove legitimate apps. It prints each path before removing it.
+- **Safe to re-run** and safe to read first — it's ~80 lines of plain `bash`.
+
+### `mac-tune-up.command`
+
+A health report — disk space, SMART status, RAM pressure — plus an optional cleanup pass. Read-only
+unless you opt into the cleanup.
+
+## Security model
+
+**A leaked Mac tunnel key is inert against your VPS.** The whole design assumes the Mac's key could be
+stolen and still grants an attacker nothing useful:
+
+- **Tunnel user:** `nologin`, key-only. `authorized_keys` is pinned with
+  `restrict,port-forwarding,permitlisten="127.0.0.1:9922"`.
+- **sshd `Match User tunnel`:** `AllowTcpForwarding remote` (no `-L`), `PermitOpen none`,
+  `PermitListen 127.0.0.1:9922`, `ForceCommand /sbin/nologin`.
+- **Container:** no `--privileged`, no host network, no mounts → it cannot see the VPS host or any other
+  service on it.
+- **On-demand:** `docker stop` between sessions = zero attack surface.
+- **Two keys, two scopes:** Mac→container (tunnel) and you→Mac (control) never overlap.
+
+Verified with negative tests: interactive shell blocked · `-L` local-forward "administratively
+prohibited" · `-R` to any port other than 9922 denied.
+
+> **Known trade-off — first-connect trust.** The Mac's `launchd` daemon currently dials the VPS with
+> `StrictHostKeyChecking=no` + `UserKnownHostsFile=/dev/null` so it connects unattended on a fresh box.
+> That leaves the *Mac→VPS* hop theoretically MITM-able on first connect. If your threat model needs it,
+> pin the container's host key in the daemon's `known_hosts` instead. Pinning support is on the
+> [roadmap](#roadmap).
+
+## Heads-up: Gatekeeper &amp; antivirus
+
+Two friction points worth knowing before you deploy:
+
+- **Reverse tunnels look like malware to some AV.** Like `frp` and `ngrok`, a tool that opens an outbound
+  tunnel can trip antivirus heuristics. There is nothing malicious here — but if you run third-party AV on
+  the Mac, you may need to allow the `launchd` job.
+- **Unsigned `.command` files** will prompt Gatekeeper on first run ("downloaded from the internet"). For
+  an owner you're helping, transfer them locally and right-click → **Open** once, or strip the quarantine
+  flag: `xattr -d com.apple.quarantine "Your Tool.command"`.
 
 ## Gotchas (paid for, so you don't)
-- macOS has no `timeout`. Alpine `adduser -D` **locks** the password (`!` → sshd "invalid user"); fix to `*`.
-- Never retype an SSH key off a photo — OCR turns `l→1`, `O→0`. Transfer via a short-URL / file.
-- Docker port-publish bypasses the host `INPUT` firewall (it uses the `DOCKER-USER` chain). Know it.
-- Ship the owner double-click `.command` tools; use `osascript … with administrator privileges` for a
-  native password box instead of Terminal `sudo`.
+
+- macOS has no `timeout(1)`. Don't assume GNU coreutils.
+- Alpine's `adduser -D` **locks** the password (`!` in `/etc/shadow`), which makes sshd reject the user as
+  "invalid" — patch it to `*`. (The container already does this; know it if you fork.)
+- **Never retype an SSH key off a photo** — OCR turns `l→1` and `O→0`. Transfer via a file or short URL.
+- Docker's published ports bypass the host's `INPUT` firewall chain — they're filtered in `DOCKER-USER`,
+  not `INPUT`. Firewall accordingly.
+- Hand owners **double-click `.command` tools** and use `osascript … with administrator privileges` for a
+  native password box instead of teaching them `sudo` in Terminal.
+
+## When to use what
+
+| | Old Mac (10.13–10.14)? | No inbound / CGNAT | Nothing to install on target | Best for |
+|---|:---:|:---:|:---:|---|
+| **mac-lifeline** | ✅ | ✅ | ✅ (built-in `ssh`) | Old/unreachable Macs you administer headless |
+| Tailscale | ❌ (needs 10.15+) | ✅ | ❌ (installs agent) | Modern fleets, mesh VPN |
+| ngrok | ⚠️ | ✅ | ❌ (binary) | Quick public demos of a local port |
+| frp | ✅ | ✅ | ❌ (binary) | Self-hosted multi-service tunneling |
+| TeamViewer / AnyDesk | ⚠️ | ✅ | ❌ (GUI app + account) | Interactive screen control with the owner present |
+| macOS Screen Sharing / VNC | ✅ | ❌ (needs inbound) | ✅ (built-in) | Same-LAN GUI access |
+
+## Roadmap
+
+- [ ] `--dry-run` / preview mode for `clean-adware` (show, confirm, then remove)
+- [ ] `tunnel/uninstall.command` — cleanly unload the daemon and remove keys/plist
+- [ ] `tunnel/vps-setup.sh` to mirror `mac-setup.sh` (no hand-copied `docker run`)
+- [ ] `verify-hardening.sh` — codify the negative security tests as a runnable check
+- [ ] CI: `shellcheck` + `hadolint` + a container build smoke test
+- [ ] Host-key pinning option for the Mac→VPS hop
+- [ ] Externalize the adware signature list for easy community PRs
+- [ ] Client-deliverable templates (plain-English summary / options pages)
+
+Want one of these? Open an issue or a PR — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Related projects
+
+- [frp](https://github.com/fatedier/frp) · [rathole](https://github.com/rapiz1/rathole) — general-purpose
+  reverse proxies for modern hosts (what you'd reach for when the target *can* run a binary).
+- [OpenCore Legacy Patcher](https://github.com/dortania/OpenCore-Legacy-Patcher) — run current macOS on
+  unsupported Macs (the upgrade path, where the hardware allows).
+- [privacy.sexy](https://github.com/undergroundwires/privacy.sexy) — transparent, scriptable macOS/Windows
+  cleanup and hardening.
+
+## Contributing
+
+PRs welcome — especially **new adware signatures** and **macOS version reports**. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Security
+
+Found a security issue? Please report it privately — see [SECURITY.md](SECURITY.md). Do not open a public
+issue for vulnerabilities.
 
 ## License
-MIT — see [`LICENSE`](LICENSE).
+
+[MIT](LICENSE) © 2026 Curtis Mercier
+</content>
+</invoke>
